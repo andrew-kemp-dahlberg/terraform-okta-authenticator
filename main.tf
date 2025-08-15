@@ -15,9 +15,7 @@ resource "okta_authenticator" "okta_verify" {
 
 resource "restapi_object" "enable_ov_push" {
   path = "/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push/lifecycle/activate"
-  data = "{}"  # Empty body for activation
-  
-  # Important: Prevent constant recreation
+  data = "{}"  
   read_path   = "/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push"
   read_method = "GET"
   
@@ -27,7 +25,6 @@ resource "restapi_object" "enable_ov_push" {
 resource "restapi_object" "enable_ov_fastpass" {
   path = "/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce/lifecycle/activate"
   data = "{}"
-  
   read_path   = "/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce"
   read_method = "GET"
   
@@ -85,6 +82,18 @@ resource "okta_policy_password" "pw_policy" {
   skip_unlock                 = false
 }
 
+resource "okta_policy_rule_password" "standard_users" {
+  policy_id = okta_policy_password.nist_2025.id
+  name      = "Standard Users"
+  
+  # These are what matter for password policies:
+  password_change = "ALLOW"    # Can users change passwords?
+  password_reset  = "ALLOW"    # Can users reset passwords?  
+  password_unlock = "DENY"     # Can users self-unlock?
+  
+  # Network zones are OPTIONAL and rarely needed:
+  network_connection = "ANYWHERE"  # Usually just leave this as ANYWHERE
+}
 resource "okta_policy_profile_enrollment" "example" {
   name   = "Enrollment Policy"
   status = "ACTIVE"
