@@ -84,8 +84,3 @@ provider "okta" {
     "okta.authenticators.read"
   ]
 }
-
-# Output the error for debugging
-output "oauth_error" {
-  value = local.error_message
-}
