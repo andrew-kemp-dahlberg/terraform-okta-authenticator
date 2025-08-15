@@ -6,6 +6,10 @@ terraform {
       source  = "okta/okta"
       version = "~> 5.2"
     }
+    restapi = {
+      source  = "mastercard/restapi"
+      version = "~> 1.19"
+    }
   }
 }
 
@@ -22,4 +26,12 @@ provider "okta" {
     "okta.authenticators.read"
   
   ]
+}
+
+provider "restapi" {
+  uri                  = "https://${var.okta_org_name}.${var.okta_base_url}"
+  write_returns_object = true
+  headers = {
+    Authorization = "SSWS ${var.okta_api_token}"
+  }
 }
