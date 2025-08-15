@@ -40,8 +40,6 @@ resource "jwt_signed_token" "okta_assertion" {
     aud = "https://${var.okta_org_name}.${var.okta_base_url}/oauth2/v1/token"
     iss = var.okta_client_id
     sub = var.okta_client_id
-    iat = parseint(formatdate("X", timestamp()), 10)
-    exp = parseint(formatdate("X", timeadd(timestamp(), "5m")), 10)
     jti = uuid()
     kid = var.okta_private_key_id
   })
