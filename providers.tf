@@ -78,12 +78,6 @@ locals {
 }
 
 
-locals {
-  # Parse the token from the response
-  token_response = jsondecode(data.http.okta_token.response_body)
-  access_token   = local.token_response.access_token
-}
-
 # Configure restapi provider with OAuth token
 provider "restapi" {
   uri                  = "https://${var.okta_org_name}.${var.okta_base_url}"
