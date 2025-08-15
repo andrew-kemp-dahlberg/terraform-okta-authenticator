@@ -31,27 +31,25 @@ provider "okta" {
   ]
 }
 
-resource "jwt_hashed_token" "okta_assertion" {
+resource "jwt_signed_token" "okta_assertion" {
   algorithm = "RS256"
   
-  # Use 'secret' instead of 'private_key'
+  # RSA private key for signing
   secret = var.okta_private_key
   
-  # Use 'claims_json' instead of 'claims'
+  # JWT claims
   claims_json = jsonencode({
     aud = "https://${var.okta_org_name}.${var.okta_base_url}/oauth2/v1/token"
     iss = var.okta_client_id
     sub = var.okta_client_id
-    iat = floor(timestamp())  # JWT expects integer timestamps
+    iat = floor(timestamp())
     exp = floor(timeadd(timestamp(), "5m"))
     jti = uuid()
-    # The 'kid' goes in the claims if needed, not in a separate header
     kid = var.okta_private_key_id
   })
 }
 
 
-# Use the JWT to get an access token
 data "http" "okta_token" {
   url    = "https://${var.okta_org_name}.${var.okta_base_url}/oauth2/v1/token"
   method = "POST"
@@ -65,7 +63,7 @@ data "http" "okta_token" {
     "okta.policies.read", 
     "okta.authenticators.manage",
     "okta.authenticators.read"
-  ])}&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&client_assertion=${jwt_hashed_token.okta_assertion.token}"
+  ])}&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&client_assertion=${jwt_signed_token.okta_assertion.token}"
 }
 
 locals {
