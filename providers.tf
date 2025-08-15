@@ -63,7 +63,8 @@ data "http" "okta_token" {
 
 locals {
   token_response = jsondecode(data.http.okta_token.response_body)
-  access_token   = local.token_response.access_token
+  access_token = local.has_error ? "" : local.token_response.access_token
+  error_message = local.has_error ? "${local.token_response.error}: ${lookup(local.token_response, "error_description", "No description")}" : ""
 }
 
 # Configure restapi provider with OAuth token
@@ -75,18 +76,6 @@ provider "restapi" {
     Accept        = "application/json"
     Content-Type  = "application/json"
   }
-}
-
-
-locals {
-  token_response = jsondecode(data.http.okta_token.response_body)
-  
-  # Check if we got an error response
-  has_error = can(local.token_response.error)
-  
-  # Conditionally get the access token or error message
-  access_token = local.has_error ? "" : local.token_response.access_token
-  error_message = local.has_error ? "${local.token_response.error}: ${lookup(local.token_response, "error_description", "No description")}" : ""
 }
 
 # Output the error for debugging
