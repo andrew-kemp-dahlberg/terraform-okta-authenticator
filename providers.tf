@@ -35,7 +35,7 @@ resource "jwt_signed_token" "okta_assertion" {
   algorithm = "RS256"
   
   # RSA private key for signing
-  secret = var.okta_private_key
+  key = var.okta_private_key
   
   # JWT claims
   claims_json = jsonencode({
