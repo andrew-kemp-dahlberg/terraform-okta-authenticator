@@ -55,7 +55,6 @@ resource "okta_policy_password" "example" {
   email_recovery              = "INACTIVE"  # Disable email recovery for security
   sms_recovery                = "INACTIVE"  # Enable for healthcare staff convenience
   call_recovery               = "INACTIVE"  # Disable voice calls for security
-  recovery_email_token        = 60  # Token valid for 60 minutes
   
   # Security questions per NIST - better to disable
   question_recovery           = "INACTIVE"  # NIST recommends against
