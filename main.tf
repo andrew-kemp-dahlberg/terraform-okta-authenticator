@@ -115,6 +115,6 @@ resource "okta_policy_mfa" "passwordless_requirement" {
   }
   
   okta_password = {
-    enroll = "OPTIONAL"  # Or keep as OPTIONAL if you want users to have the choice
+    enroll = "NOT_ALLOWED"  # Or keep as OPTIONAL if you want users to have the choice
   }
 }
