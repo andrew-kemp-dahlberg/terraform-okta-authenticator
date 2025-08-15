@@ -28,11 +28,34 @@ provider "okta" {
     "okta.policies.read", 
     "okta.authenticators.manage",
     "okta.authenticators.read"
-  
   ]
 }
 
-# First, get an access token using your OAuth app
+resource "jwt_hashed_token" "okta_assertion" {
+  algorithm = "RS256"
+  
+  # JWT Header
+  header = jsonencode({
+    alg = "RS256"
+    typ = "JWT"
+    kid = var.okta_private_key_id
+  })
+  
+  # JWT Claims/Payload
+  claims = jsonencode({
+    aud = "https://${var.okta_org_name}.${var.okta_base_url}/oauth2/v1/token"
+    iss = var.okta_client_id
+    sub = var.okta_client_id
+    iat = timestamp()
+    exp = timeadd(timestamp(), "5m")
+    jti = uuid()
+  })
+  
+  # Your RSA private key
+  private_key = var.okta_private_key
+}
+
+# Use the JWT to get an access token
 data "http" "okta_token" {
   url    = "https://${var.okta_org_name}.${var.okta_base_url}/oauth2/v1/token"
   method = "POST"
@@ -41,8 +64,19 @@ data "http" "okta_token" {
     "Content-Type" = "application/x-www-form-urlencoded"
   }
   
-  request_body = "grant_type=client_credentials&client_id=${var.okta_client_id}&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&client_assertion=${local.jwt_assertion}&scope=okta.authenticators.manage okta.authenticators.read"
+  request_body = "grant_type=client_credentials&scope=${join("+", [
+    "okta.policies.manage",
+    "okta.policies.read", 
+    "okta.authenticators.manage",
+    "okta.authenticators.read"
+  ])}&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&client_assertion=${jwt_hashed_token.okta_assertion.token}"
 }
+
+locals {
+  token_response = jsondecode(data.http.okta_token.response_body)
+  access_token   = local.token_response.access_token
+}
+
 
 locals {
   # Parse the token from the response
