@@ -62,19 +62,3 @@ output "password_policy_auto_unlock_minutes" {
   description = "Minutes before locked account auto-unlocks"
   value       = okta_policy_password.pw_policy.password_auto_unlock_minutes
 }
-
-resource "okta_policy_mfa" "passwordless_requirement" {
-  name            = "Passwordless Requirement"
-  description     = ""
-  status          = "ACTIVE"
-  priority        = 1
-  okta_email = {
-    enroll = "NOT_ALLOWED"
-  }
-  okta_verify = {
-    enroll = "REQUIRED"
-  }
-  okta_password = {
-    enroll = "NOT_ALLOWED"
-  }
-}
