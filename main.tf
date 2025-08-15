@@ -69,3 +69,19 @@ resource "okta_policy_profile_enrollment" "example" {
   status = "ACTIVE"
 }
 
+
+resource "okta_policy_mfa" "passwordless_requirement" {
+  name            = "Passwordless Requirement"
+  description     = ""
+  status          = "ACTIVE"
+  priority        = 1
+  okta_email = {
+    enroll = "NOT_ALLOWED"
+  }
+  okta_verify = {
+    enroll = "REQUIRED"
+  }
+  okta_password = {
+    enroll = "NOT_ALLOWED"
+  }
+}
