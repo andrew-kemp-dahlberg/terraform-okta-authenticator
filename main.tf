@@ -13,7 +13,7 @@ resource "okta_authenticator" "okta_verify" {
   status                      = "ACTIVE"
 }
 
-resource "okta_policy_password" "example" {
+resource "okta_policy_password" "pw_policy" {
   name                          = "Password Policy"
   status                        = "ACTIVE"
   description                   = "Password Policy"
