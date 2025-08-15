@@ -23,7 +23,7 @@ resource "restapi_object" "enable_ov_push" {
 }
 
 resource "restapi_object" "enable_ov_fastpass" {
-  path = "/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce/lifecycle/deactivate"
+  path = "/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce/lifecycle/activate"
   data = "{}"
   read_path   = "/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce"
   read_method = "GET"
