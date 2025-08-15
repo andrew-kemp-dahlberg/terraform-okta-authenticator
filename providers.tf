@@ -42,6 +42,8 @@ resource "jwt_signed_token" "okta_assertion" {
     sub = var.okta_client_id
     jti = uuid()
     kid = var.okta_private_key_id
+    iat = floor(timestamp())
+    exp = floor(timestamp()) + 3600
   })
 }
 
