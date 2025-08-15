@@ -28,10 +28,31 @@ provider "okta" {
   ]
 }
 
+# First, get an access token using your OAuth app
+data "http" "okta_token" {
+  url    = "https://${var.okta_org_name}.${var.okta_base_url}/oauth2/v1/token"
+  method = "POST"
+  
+  request_headers = {
+    "Content-Type" = "application/x-www-form-urlencoded"
+  }
+  
+  request_body = "grant_type=client_credentials&client_id=${var.okta_client_id}&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&client_assertion=${local.jwt_assertion}&scope=okta.authenticators.manage okta.authenticators.read"
+}
+
+locals {
+  # Parse the token from the response
+  token_response = jsondecode(data.http.okta_token.response_body)
+  access_token   = local.token_response.access_token
+}
+
+# Configure restapi provider with OAuth token
 provider "restapi" {
   uri                  = "https://${var.okta_org_name}.${var.okta_base_url}"
   write_returns_object = true
   headers = {
-    Authorization = "SSWS ${var.okta_api_token}"
+    Authorization  = "Bearer ${local.access_token}"
+    Accept        = "application/json"
+    Content-Type  = "application/json"
   }
 }
