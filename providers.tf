@@ -46,8 +46,8 @@ resource "jwt_signed_token" "okta_assertion" {
     sub = var.okta_client_id
     jti = uuid()
     kid = var.okta_private_key_id
-    iat = provider::time::rfc3339_parse(timestamp())  # Unix timestamp
-    exp = provider::time::rfc3339_parse(timestamp()) + 3600  # Expires in 1 hour
+    iat = provider::time::rfc3339_parse(timestamp()).Unix  # Unix timestamp
+    exp = provider::time::rfc3339_parse(timestamp()).Unix + 3600  # Expires in 1 hour
   })
 }
 
