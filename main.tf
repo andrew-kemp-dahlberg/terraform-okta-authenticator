@@ -105,13 +105,16 @@ resource "okta_policy_mfa" "passwordless_requirement" {
   description     = ""
   status          = "ACTIVE"
   priority        = 1
+  
   okta_email = {
     enroll = "NOT_ALLOWED"
   }
+  
   okta_verify = {
-    enroll = "REQUIRED"
+    enroll = "REQUIRED"  # Changed from REQUIRED to enable SSO
   }
+  
   okta_password = {
-    enroll = "NOT_ALLOWED"
+    enroll = "OPTIONAL"  # Or keep as OPTIONAL if you want users to have the choice
   }
 }

@@ -34,21 +34,18 @@ provider "okta" {
 resource "jwt_signed_token" "okta_assertion" {
   algorithm = "RS256"
   
-  # RSA private key for signing
   key = var.okta_private_key
   
-  # JWT claims
   claims_json = jsonencode({
     aud = "https://${var.okta_org_name}.${var.okta_base_url}/oauth2/v1/token"
     iss = var.okta_client_id
     sub = var.okta_client_id
-    iat = floor(timestamp())
-    exp = floor(timeadd(timestamp(), "5m"))
+    iat = parseint(formatdate("X", timestamp()), 10)
+    exp = parseint(formatdate("X", timeadd(timestamp(), "5m")), 10)
     jti = uuid()
     kid = var.okta_private_key_id
   })
 }
-
 
 data "http" "okta_token" {
   url    = "https://${var.okta_org_name}.${var.okta_base_url}/oauth2/v1/token"
