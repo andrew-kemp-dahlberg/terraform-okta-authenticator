@@ -83,7 +83,7 @@ resource "okta_policy_password" "pw_policy" {
 }
 
 resource "okta_policy_rule_password" "standard_users" {
-  policy_id = okta_policy_password.nist_2025.id
+  policy_id = okta_policy_password.pw_policy.id
   name      = "Standard Users"
   
   # These are what matter for password policies:
