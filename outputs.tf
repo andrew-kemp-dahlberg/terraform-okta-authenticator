@@ -71,3 +71,12 @@ output "token_response_debug" {
 output "token_response_keys" {
   value = keys(local.token_response)
 }
+
+output "oauth_error" {
+  value = local.error_message
+}
+
+output "token_response_debug" {
+  value = local.token_response
+  sensitive = false  # Temporarily for debugging
+}
