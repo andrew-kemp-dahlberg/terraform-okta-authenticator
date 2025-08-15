@@ -62,3 +62,12 @@ output "password_policy_auto_unlock_minutes" {
   description = "Minutes before locked account auto-unlocks"
   value       = okta_policy_password.pw_policy.password_auto_unlock_minutes
 }
+
+output "token_response_debug" {
+  value = local.token_response
+  sensitive = false  # Temporarily set to false for debugging
+}
+
+output "token_response_keys" {
+  value = keys(local.token_response)
+}
