@@ -65,7 +65,7 @@ resource "okta_policy_password" "pw_policy" {
   
   # Account lockout settings for security
   password_max_lockout_attempts = 5   # Lock after 5 failed attempts
-  password_auto_unlock_minutes  = 30  # Auto-unlock after 30 minutes
+  password_auto_unlock_minutes  = 0  # Auto-unlock after 30 minutes
   password_show_lockout_failures = true
   password_lockout_notification_channels = ["EMAIL"]
   
