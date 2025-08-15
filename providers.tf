@@ -14,6 +14,10 @@ terraform {
       source  = "camptocamp/jwt"  
       version = "~> 1.1"
     }
+  time = {
+      source = "hashicorp/time"
+      version = "0.13.1"
+    }
   }
 }
 
