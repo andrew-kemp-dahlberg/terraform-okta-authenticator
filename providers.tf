@@ -64,6 +64,7 @@ data "http" "okta_token" {
 locals {
   token_response = jsondecode(data.http.okta_token.response_body)
   access_token = local.has_error ? "" : local.token_response.access_token
+  has_error = can(local.token_response.error)
   error_message = local.has_error ? "${local.token_response.error}: ${lookup(local.token_response, "error_description", "No description")}" : ""
 }
 
