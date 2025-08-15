@@ -14,9 +14,9 @@ resource "okta_authenticator" "okta_verify" {
 }
 
 resource "okta_policy_password" "example" {
-  name                          = "example"
+  name                          = "Password Policy"
   status                        = "ACTIVE"
-  description                   = "Password Policy - Children's Mercy Healthcare Standards"
+  description                   = "Password Policy"
   priority                      = 1
   auth_provider                 = "OKTA"
   
@@ -64,3 +64,9 @@ resource "okta_policy_password" "example" {
   # Don't unlock AD accounts automatically
   skip_unlock                 = false
 }
+
+resource "okta_policy_profile_enrollment" "example" {
+  name   = "Enrollment Policy"
+  status = "ACTIVE"
+}
+
