@@ -1,10 +1,9 @@
 # providers.tf
-# Okta provider configuration
 terraform {
   required_providers {
     okta = {
       source  = "okta/okta"
-      version = "~> 5.2"
+      version = "~> 5.3"
     }
     restapi = {
       source  = "mastercard/restapi"
@@ -14,25 +13,12 @@ terraform {
       source  = "camptocamp/jwt"  
       version = "~> 1.1"
     }
-  time = {
-      source = "hashicorp/time"
-      version = "0.13.1"
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.13"
     }
   }
-}
-
-provider "okta" {
-  org_name       = var.okta_org_name
-  base_url       = var.okta_base_url
-  client_id      = var.okta_client_id
-  private_key_id = var.okta_private_key_id
-  private_key    = var.okta_private_key
-  scopes    = [
-    "okta.policies.manage",
-    "okta.policies.read", 
-    "okta.authenticators.manage",
-    "okta.authenticators.read"
-  ]
+  required_version = ">= 1.8.0"  # Provider functions need 1.8+
 }
 
 resource "jwt_signed_token" "okta_assertion" {
@@ -46,8 +32,8 @@ resource "jwt_signed_token" "okta_assertion" {
     sub = var.okta_client_id
     jti = uuid()
     kid = var.okta_private_key_id
-    iat = provider::time::rfc3339_parse(timestamp()).unix  # Unix timestamp
-    exp = provider::time::rfc3339_parse(timestamp()).unix + 3600  # Expires in 1 hour
+    iat = provider::time::rfc3339_parse(timestamp()).unix
+    exp = provider::time::rfc3339_parse(timestamp()).unix + 3600
   })
 }
 
@@ -83,6 +69,20 @@ provider "restapi" {
     Accept        = "application/json"
     Content-Type  = "application/json"
   }
+}
+
+provider "okta" {
+  org_name       = var.okta_org_name
+  base_url       = var.okta_base_url
+  client_id      = var.okta_client_id
+  private_key_id = var.okta_private_key_id
+  private_key    = var.okta_private_key
+  scopes    = [
+    "okta.policies.manage",
+    "okta.policies.read", 
+    "okta.authenticators.manage",
+    "okta.authenticators.read"
+  ]
 }
 
 # Output the error for debugging
