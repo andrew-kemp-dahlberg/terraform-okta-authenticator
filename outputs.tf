@@ -28,7 +28,6 @@ output "okta_verify_authenticator_settings" {
   sensitive   = true
 }
 
-# Password Policy Outputs
 output "password_policy_id" {
   description = "The ID of the password policy"
   value       = okta_policy_password.pw_policy.id
