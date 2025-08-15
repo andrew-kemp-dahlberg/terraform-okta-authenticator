@@ -34,26 +34,22 @@ provider "okta" {
 resource "jwt_hashed_token" "okta_assertion" {
   algorithm = "RS256"
   
-  # JWT Header
-  header = jsonencode({
-    alg = "RS256"
-    typ = "JWT"
-    kid = var.okta_private_key_id
-  })
+  # Use 'secret' instead of 'private_key'
+  secret = var.okta_private_key
   
-  # JWT Claims/Payload
-  claims = jsonencode({
+  # Use 'claims_json' instead of 'claims'
+  claims_json = jsonencode({
     aud = "https://${var.okta_org_name}.${var.okta_base_url}/oauth2/v1/token"
     iss = var.okta_client_id
     sub = var.okta_client_id
-    iat = timestamp()
-    exp = timeadd(timestamp(), "5m")
+    iat = floor(timestamp())  # JWT expects integer timestamps
+    exp = floor(timeadd(timestamp(), "5m"))
     jti = uuid()
+    # The 'kid' goes in the claims if needed, not in a separate header
+    kid = var.okta_private_key_id
   })
-  
-  # Your RSA private key
-  private_key = var.okta_private_key
 }
+
 
 # Use the JWT to get an access token
 data "http" "okta_token" {
@@ -76,7 +72,6 @@ locals {
   token_response = jsondecode(data.http.okta_token.response_body)
   access_token   = local.token_response.access_token
 }
-
 
 # Configure restapi provider with OAuth token
 provider "restapi" {
