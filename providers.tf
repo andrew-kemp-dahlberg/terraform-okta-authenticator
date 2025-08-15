@@ -10,6 +10,10 @@ terraform {
       source  = "mastercard/restapi"
       version = "~> 1.19"
     }
+    jwt = {
+      source  = "camptocamp/jwt"  
+      version = "~> 1.1"
+    }
   }
 }
 
