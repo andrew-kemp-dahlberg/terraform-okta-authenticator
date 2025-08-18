@@ -7,28 +7,55 @@ resource "okta_authenticator" "okta_pw" {
 }
 
 resource "okta_authenticator" "okta_verify" {
-  key                         = "okta_verify"
-  name                        = "Okta Verify"
-  settings                    = "{\"channelBinding\":{\"required\":\"HIGH_RISK_ONLY\",\"style\":\"NUMBER_CHALLENGE\"},\"compliance\":{\"fips\":\"OPTIONAL\"},\"enrollmentSecurityLevel\":\"HIGH\",\"userVerification\":\"REQUIRED\",\"userVerificationMethods\":[\"BIOMETRICS\"]}"
-  status                      = "ACTIVE"
+  key    = "okta_verify"
+  name   = "Okta Verify"
+  status = "ACTIVE"
+
+  settings = jsonencode({
+    "allowedFor" : "any"
+    "compliance" : {
+      "fips" : "OPTIONAL"
+    },
+    "channelBinding" : {
+      "style" : "NUMBER_CHALLENGE",
+      "required" : "HIGH_RISK_ONLY"
+    },
+    "userVerification" : "REQUIRED",
+    "enrollmentSecurityLevel" : "HIGH",
+    "userVerificationMethods" : [
+      "BIOMETRICS"
+    ],
+    "userVerification" : "REQUIRED"
+  })
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
-resource "restapi_object" "enable_ov_push" {
-  path = "/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push/lifecycle/activate"
-  data = "{}"  
-  read_path   = "/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push"
-  read_method = "GET"
-  
+
+# OV Push Authenticator Methods cannot be managed via provider at the moment. Additional call to enable Okta Verify Push & FastPass below (workaround)
+resource "null_resource" "enable_ov_push" {
   depends_on = [okta_authenticator.okta_verify]
+  triggers = {
+    always_run = "${timestamp()}" # Forces this resource to run every time
+  }
+
+  provisioner "local-exec" {
+    command = "curl -X POST -H \"Authorization:Bearer ${local.access_token}\" https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push/lifecycle/activate"
+  }
 }
 
-resource "restapi_object" "enable_ov_fastpass" {
-  path = "/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce/lifecycle/activate"
-  data = "{}"
-  read_path   = "/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce"
-  read_method = "GET"
-  
+
+
+resource "null_resource" "enable_ov_fastpass" {
   depends_on = [okta_authenticator.okta_verify]
+  triggers = {
+    always_run = "${timestamp()}" # Forces this resource to run every time
+  }
+
+  provisioner "local-exec" {
+    command = "curl -X POST -H \"Authorization:Bearer ${local.access_token}\" https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce/lifecycle/activate"
+  }
 }
 
 resource "okta_policy_password" "pw_policy" {

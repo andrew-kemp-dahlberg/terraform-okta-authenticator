@@ -5,10 +5,6 @@ terraform {
       source  = "okta/okta"
       version = "~> 5.3"
     }
-    restapi = {
-      source  = "mastercard/restapi"
-      version = "~> 1.19"
-    }
     jwt = {
       source  = "camptocamp/jwt"  
       version = "~> 1.1"
