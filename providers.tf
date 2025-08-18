@@ -56,16 +56,6 @@ locals {
   error_message = local.has_error ? "${local.token_response.error}: ${lookup(local.token_response, "error_description", "No description")}" : ""
 }
 
-# Configure restapi provider with OAuth token
-provider "restapi" {
-  uri                  = "https://${var.okta_org_name}.${var.okta_base_url}"
-  write_returns_object = true
-  headers = {
-    Authorization  = "Bearer ${local.access_token}"
-    Accept        = "application/json"
-    Content-Type  = "application/json"
-  }
-}
 
 provider "okta" {
   org_name       = var.okta_org_name
