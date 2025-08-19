@@ -109,7 +109,7 @@ resource "okta_policy_mfa" "passwordless_requirement" {
   priority        = 1
   
  okta_email = {
-    enroll = "REQUIRED"  
+    enroll = "NOT_ALLOWED"  
   }
   okta_verify = {
     enroll = "REQUIRED"
