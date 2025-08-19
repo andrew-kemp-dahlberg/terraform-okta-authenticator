@@ -64,7 +64,3 @@ output "password_policy_auto_unlock_minutes" {
 }
 
 
-output "okta_verify_methods_status" {
-  value = terraform_data.okta_verify_methods.output
-  description = "Status of Okta Verify method activation"
-}
