@@ -35,11 +35,10 @@ resource "okta_authenticator" "okta_verify" {
 
 # Using terraform_data (modern replacement for null_resource)
 resource "terraform_data" "okta_verify_methods" {
-  # Only re-run when the authenticator actually changes
   triggers_replace = {
     authenticator_id = okta_authenticator.okta_verify.id
-    # Add authenticator settings if you want to re-run on config changes
-    settings_hash = md5(okta_authenticator.okta_verify.settings)
+    # Use the actual settings string, not a hash
+    settings = okta_authenticator.okta_verify.settings
   }
 
   provisioner "local-exec" {
@@ -204,6 +203,6 @@ resource "okta_policy_mfa" "passwordless_requirement" {
     enroll = "REQUIRED"
   }
   okta_password = {
-    enroll = "NOT_ALLOWED"  # This works in Andrew's setup
+    enroll = "REQUIRED"  # This works in Andrew's setup
   }
 }
