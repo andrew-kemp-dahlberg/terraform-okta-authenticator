@@ -35,20 +35,28 @@ resource "okta_authenticator" "okta_verify" {
 
 # OV Push Authenticator Methods cannot be managed via provider at the moment. Additional call to enable Okta Verify Push & FastPass below (workaround)
 resource "null_resource" "enable_ov_push" {
-  depends_on = [okta_authenticator.okta_verify]
   triggers = {
     always_run = "${timestamp()}" # Forces this resource to run every time
   }
 
   provisioner "local-exec" {
-    command = "curl -X POST -H \"Authorization:Bearer ${local.access_token}\" https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push/lifecycle/activate"
+    # First check status, then activate only if needed
+    command = <<-EOT
+      STATUS=$(curl -s -H "Authorization:Bearer ${local.access_token}" \
+        https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push | \
+        jq -r '.status')
+      
+      if [ "$STATUS" != "ACTIVE" ]; then
+        curl -X POST -H "Authorization:Bearer ${local.access_token}" \
+          https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push/lifecycle/activate
+      fi
+    EOT
   }
 }
 
 
 
 resource "null_resource" "enable_ov_fastpass" {
-  depends_on = [okta_authenticator.okta_verify]
   triggers = {
     always_run = "${timestamp()}" # Forces this resource to run every time
   }
