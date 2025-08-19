@@ -96,7 +96,7 @@ resource "okta_policy_rule_password" "standard_users" {
   # Network zones are OPTIONAL and rarely needed:
   network_connection = "ANYWHERE"  # Usually just leave this as ANYWHERE
 }
-resource "okta_policy_profile_enrollment" "example" {
+resource "okta_policy_profile_enrollment" "this" {
   name   = "Enrollment Policy"
   status = "ACTIVE"
 }
