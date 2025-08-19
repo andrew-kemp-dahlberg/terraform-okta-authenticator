@@ -33,44 +33,6 @@ resource "okta_authenticator" "okta_verify" {
 }
 
 
-resource "terraform_data" "okta_verify_ready" {
-  triggers_replace = {
-    authenticator_id = okta_authenticator.okta_verify.settings
-  }
-  
-  provisioner "local-exec" {
-    interpreter = ["bash", "-c"]
-    command = <<-EOT
-      set -e
-      
-      # Activate methods
-      echo "Configuring Okta Verify methods..."
-      
-      curl -X POST -H "Authorization:Bearer ${local.access_token}" \
-        "https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push/lifecycle/activate" 2>/dev/null || true
-      
-      curl -X POST -H "Authorization:Bearer ${local.access_token}" \
-        "https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce/lifecycle/activate" 2>/dev/null || true
-      
-      # Verify they're active
-      sleep 2
-      
-      PUSH_STATUS=$(curl -s -H "Authorization:Bearer ${local.access_token}" \
-        "https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push" | jq -r '.status')
-      
-      FASTPASS_STATUS=$(curl -s -H "Authorization:Bearer ${local.access_token}" \
-        "https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce" | jq -r '.status')
-      
-      if [[ "$PUSH_STATUS" == "ACTIVE" && "$FASTPASS_STATUS" == "ACTIVE" ]]; then
-        echo "✅ Okta Verify fully configured"
-      else
-        echo "⚠️  Warning: Methods may not be fully active"
-        echo "Push: $PUSH_STATUS, FastPass: $FASTPASS_STATUS"
-      fi
-    EOT
-  }
-}
-
 resource "okta_policy_password" "pw_policy" {
   name                          = "Password Policy"
   status                        = "ACTIVE"
@@ -79,7 +41,7 @@ resource "okta_policy_password" "pw_policy" {
   auth_provider                 = "OKTA"
   
   # NIST 2025: Minimum 8 chars, recommended 15+
-  password_min_length           = 15
+  password_min_length           = 8
   
   # Character requirements - keeping flexibility per NIST
   password_min_lowercase        = 1
@@ -147,16 +109,13 @@ resource "okta_policy_mfa" "passwordless_requirement" {
   priority        = 1
   
  okta_email = {
-    enroll = "REQUIRED"  # Andrew has this as REQUIRED
+    enroll = "REQUIRED"  
   }
   okta_verify = {
     enroll = "REQUIRED"
   }
   okta_password = {
-    enroll = "REQUIRED"  # This works in Andrew's setup
+    enroll = "REQUIRED"  
   }
 
-    depends_on = [
-    terraform_data.okta_verify_ready
-  ]
 }
