@@ -33,36 +33,92 @@ resource "okta_authenticator" "okta_verify" {
 }
 
 
-# OV Push Authenticator Methods cannot be managed via provider at the moment. Additional call to enable Okta Verify Push & FastPass below (workaround)
-resource "null_resource" "enable_ov_push" {
-  triggers = {
-    always_run = "${timestamp()}" # Forces this resource to run every time
+# Using terraform_data (modern replacement for null_resource)
+resource "terraform_data" "okta_verify_methods" {
+  # Only re-run when the authenticator actually changes
+  triggers_replace = {
+    authenticator_id = okta_authenticator.okta_verify.id
+    # Add authenticator settings if you want to re-run on config changes
+    settings_hash = md5(okta_authenticator.okta_verify.settings)
   }
 
   provisioner "local-exec" {
-    # First check status, then activate only if needed
+    # Proper error handling and idempotency
     command = <<-EOT
-      STATUS=$(curl -s -H "Authorization:Bearer ${local.access_token}" \
-        https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push | \
-        jq -r '.status')
+      #!/bin/bash
+      set -euo pipefail  # Exit on error, undefined vars, pipe failures
       
-      if [ "$STATUS" != "ACTIVE" ]; then
-        curl -X POST -H "Authorization:Bearer ${local.access_token}" \
-          https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push/lifecycle/activate
-      fi
+      # Configuration
+      BASE_URL="https://${var.okta_org_name}.${var.okta_base_url}"
+      AUTH_HEADER="Authorization: Bearer ${local.access_token}"
+      AUTHENTICATOR_ID="${okta_authenticator.okta_verify.id}"
+      
+      # Function to check and activate a method
+      activate_method() {
+        local METHOD=$1
+        local METHOD_NAME=$2
+        
+        echo "Checking $METHOD_NAME status..."
+        
+        # Get current status
+        RESPONSE=$(curl -s -w "\n%%HTTP_CODE%%:" \
+          -H "$AUTH_HEADER" \
+          "$BASE_URL/api/v1/authenticators/$AUTHENTICATOR_ID/methods/$METHOD")
+        
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1 | cut -d: -f1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+        
+        # Handle different response codes
+        if [ "$HTTP_CODE" = "404" ]; then
+          echo "  $METHOD_NAME not available on this authenticator"
+          return 0
+        elif [ "$HTTP_CODE" != "200" ]; then
+          echo "  Error checking $METHOD_NAME: HTTP $HTTP_CODE"
+          echo "  Response: $BODY"
+          return 1
+        fi
+        
+        # Check if already active
+        STATUS=$(echo "$BODY" | jq -r '.status // "UNKNOWN"')
+        
+        if [ "$STATUS" = "ACTIVE" ]; then
+          echo "  ✓ $METHOD_NAME already active"
+          return 0
+        fi
+        
+        # Activate the method
+        echo "  Activating $METHOD_NAME..."
+        ACTIVATE_RESPONSE=$(curl -s -w "\n%%HTTP_CODE%%:" -X POST \
+          -H "$AUTH_HEADER" \
+          "$BASE_URL/api/v1/authenticators/$AUTHENTICATOR_ID/methods/$METHOD/lifecycle/activate")
+        
+        ACTIVATE_CODE=$(echo "$ACTIVATE_RESPONSE" | tail -n1 | cut -d: -f1)
+        ACTIVATE_BODY=$(echo "$ACTIVATE_RESPONSE" | sed '$d')
+        
+        if [ "$ACTIVATE_CODE" = "200" ] || [ "$ACTIVATE_CODE" = "204" ]; then
+          echo "  ✓ $METHOD_NAME activated successfully"
+        else
+          echo "  ✗ Failed to activate $METHOD_NAME: HTTP $ACTIVATE_CODE"
+          echo "  Response: $ACTIVATE_BODY"
+          return 1
+        fi
+      }
+      
+      # Activate both methods
+      echo "Configuring Okta Verify methods for authenticator: $AUTHENTICATOR_ID"
+      activate_method "push" "Push Notifications"
+      activate_method "signed_nonce" "FastPass"
+      echo "Configuration complete"
     EOT
+    
+    interpreter = ["bash", "-c"]
   }
-}
-
-
-
-resource "null_resource" "enable_ov_fastpass" {
-  triggers = {
-    always_run = "${timestamp()}" # Forces this resource to run every time
-  }
-
-  provisioner "local-exec" {
-    command = "curl -X POST -H \"Authorization:Bearer ${local.access_token}\" https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce/lifecycle/activate"
+  
+  # Store the configuration state
+  input = {
+    authenticator_id = okta_authenticator.okta_verify.id
+    timestamp        = timestamp()
+    methods_enabled  = ["push", "signed_nonce"]
   }
 }
 
