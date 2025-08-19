@@ -64,3 +64,18 @@ output "password_policy_auto_unlock_minutes" {
 }
 
 
+output "manual_steps_required" {
+  value = <<-EOT
+    ⚠️ MANUAL CONFIGURATION REQUIRED:
+    
+    After applying, manually enable in Okta Admin:
+    1. Security > Authenticators > Okta Verify
+    2. Click "Actions" > "Edit"  
+    3. Under Methods, enable:
+       - Push Notifications
+       - FastPass
+    4. Save
+    
+    This is a one-time setup per environment.
+  EOT
+}
