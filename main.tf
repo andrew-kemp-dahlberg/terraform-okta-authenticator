@@ -33,91 +33,41 @@ resource "okta_authenticator" "okta_verify" {
 }
 
 
-# Using terraform_data (modern replacement for null_resource)
-resource "terraform_data" "okta_verify_methods" {
+resource "terraform_data" "okta_verify_ready" {
   triggers_replace = {
-    authenticator_id = okta_authenticator.okta_verify.id
-    # Use the actual settings string, not a hash
-    settings = okta_authenticator.okta_verify.settings
-  }
-
-  provisioner "local-exec" {
-    # Proper error handling and idempotency
-    command = <<-EOT
-      #!/bin/bash
-      set -euo pipefail  # Exit on error, undefined vars, pipe failures
-      
-      # Configuration
-      BASE_URL="https://${var.okta_org_name}.${var.okta_base_url}"
-      AUTH_HEADER="Authorization: Bearer ${local.access_token}"
-      AUTHENTICATOR_ID="${okta_authenticator.okta_verify.id}"
-      
-      # Function to check and activate a method
-      activate_method() {
-        local METHOD=$1
-        local METHOD_NAME=$2
-        
-        echo "Checking $METHOD_NAME status..."
-        
-        # Get current status
-        RESPONSE=$(curl -s -w "\n%%HTTP_CODE%%:" \
-          -H "$AUTH_HEADER" \
-          "$BASE_URL/api/v1/authenticators/$AUTHENTICATOR_ID/methods/$METHOD")
-        
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1 | cut -d: -f1)
-        BODY=$(echo "$RESPONSE" | sed '$d')
-        
-        # Handle different response codes
-        if [ "$HTTP_CODE" = "404" ]; then
-          echo "  $METHOD_NAME not available on this authenticator"
-          return 0
-        elif [ "$HTTP_CODE" != "200" ]; then
-          echo "  Error checking $METHOD_NAME: HTTP $HTTP_CODE"
-          echo "  Response: $BODY"
-          return 1
-        fi
-        
-        # Check if already active
-        STATUS=$(echo "$BODY" | jq -r '.status // "UNKNOWN"')
-        
-        if [ "$STATUS" = "ACTIVE" ]; then
-          echo "  ✓ $METHOD_NAME already active"
-          return 0
-        fi
-        
-        # Activate the method
-        echo "  Activating $METHOD_NAME..."
-        ACTIVATE_RESPONSE=$(curl -s -w "\n%%HTTP_CODE%%:" -X POST \
-          -H "$AUTH_HEADER" \
-          "$BASE_URL/api/v1/authenticators/$AUTHENTICATOR_ID/methods/$METHOD/lifecycle/activate")
-        
-        ACTIVATE_CODE=$(echo "$ACTIVATE_RESPONSE" | tail -n1 | cut -d: -f1)
-        ACTIVATE_BODY=$(echo "$ACTIVATE_RESPONSE" | sed '$d')
-        
-        if [ "$ACTIVATE_CODE" = "200" ] || [ "$ACTIVATE_CODE" = "204" ]; then
-          echo "  ✓ $METHOD_NAME activated successfully"
-        else
-          echo "  ✗ Failed to activate $METHOD_NAME: HTTP $ACTIVATE_CODE"
-          echo "  Response: $ACTIVATE_BODY"
-          return 1
-        fi
-      }
-      
-      # Activate both methods
-      echo "Configuring Okta Verify methods for authenticator: $AUTHENTICATOR_ID"
-      activate_method "push" "Push Notifications"
-      activate_method "signed_nonce" "FastPass"
-      echo "Configuration complete"
-    EOT
-    
-    interpreter = ["bash", "-c"]
+    authenticator_id = okta_authenticator.okta_verify.settings
   }
   
-  # Store the configuration state
-  input = {
-    authenticator_id = okta_authenticator.okta_verify.id
-    timestamp        = timestamp()
-    methods_enabled  = ["push", "signed_nonce"]
+  provisioner "local-exec" {
+    interpreter = ["bash", "-c"]
+    command = <<-EOT
+      set -e
+      
+      # Activate methods
+      echo "Configuring Okta Verify methods..."
+      
+      curl -X POST -H "Authorization:Bearer ${local.access_token}" \
+        "https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push/lifecycle/activate" 2>/dev/null || true
+      
+      curl -X POST -H "Authorization:Bearer ${local.access_token}" \
+        "https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce/lifecycle/activate" 2>/dev/null || true
+      
+      # Verify they're active
+      sleep 2
+      
+      PUSH_STATUS=$(curl -s -H "Authorization:Bearer ${local.access_token}" \
+        "https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/push" | jq -r '.status')
+      
+      FASTPASS_STATUS=$(curl -s -H "Authorization:Bearer ${local.access_token}" \
+        "https://${var.okta_org_name}.${var.okta_base_url}/api/v1/authenticators/${okta_authenticator.okta_verify.id}/methods/signed_nonce" | jq -r '.status')
+      
+      if [[ "$PUSH_STATUS" == "ACTIVE" && "$FASTPASS_STATUS" == "ACTIVE" ]]; then
+        echo "✅ Okta Verify fully configured"
+      else
+        echo "⚠️  Warning: Methods may not be fully active"
+        echo "Push: $PUSH_STATUS, FastPass: $FASTPASS_STATUS"
+      fi
+    EOT
   }
 }
 
@@ -205,4 +155,8 @@ resource "okta_policy_mfa" "passwordless_requirement" {
   okta_password = {
     enroll = "REQUIRED"  # This works in Andrew's setup
   }
+
+    depends_on = [
+    terraform_data.okta_verify_ready
+  ]
 }
