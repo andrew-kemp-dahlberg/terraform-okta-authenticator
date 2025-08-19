@@ -63,15 +63,8 @@ output "password_policy_auto_unlock_minutes" {
   value       = okta_policy_password.pw_policy.password_auto_unlock_minutes
 }
 
-output "token_response_keys" {
-  value = keys(local.token_response)
-}
 
-output "oauth_error" {
-  value = local.error_message
-}
-
-output "token_response_debug" {
-  value = local.token_response
-  sensitive = false  # Temporarily for debugging
+output "okta_verify_methods_status" {
+  value = terraform_data.okta_verify_methods.output
+  description = "Status of Okta Verify method activation"
 }
