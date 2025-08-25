@@ -55,7 +55,7 @@ resource "okta_policy_password" "pw_policy" {
   password_exclude_last_name    = true
   
   # NIST 2025: Check against compromised passwords
-  password_dictionary_lookup    = true
+  password_dictionary_lookup    = false
   
   # NIST 2025: No periodic rotation unless compromised
   password_max_age_days        = 0  # No expiration
@@ -91,7 +91,7 @@ resource "okta_policy_rule_password" "standard_users" {
   # These are what matter for password policies:
   password_change = "ALLOW"    # Can users change passwords?
   password_reset  = "ALLOW"    # Can users reset passwords?  
-  password_unlock = "DENY"     # Can users self-unlock?
+  password_unlock = "ALLOW"     # Can users self-unlock?
   
   # Network zones are OPTIONAL and rarely needed:
   network_connection = "ANYWHERE"  # Usually just leave this as ANYWHERE
@@ -109,10 +109,10 @@ resource "okta_policy_mfa" "passwordless_requirement" {
   priority        = 1
   
  okta_email = {
-    enroll = "NOT_ALLOWED"  
+    enroll = "ALLOWED"  
   }
   okta_verify = {
-    enroll = "REQUIRED"
+    enroll = "ALLOWED"
   }
   okta_password = {
     enroll = "REQUIRED"  
