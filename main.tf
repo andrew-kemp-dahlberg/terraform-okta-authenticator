@@ -20,12 +20,12 @@ resource "okta_authenticator" "okta_verify" {
       "style" : "NUMBER_CHALLENGE",
       "required" : "HIGH_RISK_ONLY"
     },
-    "userVerification" : "REQUIRED",
+    "userVerification" : "OPTIONAL",
     "enrollmentSecurityLevel" : "HIGH",
     "userVerificationMethods" : [
       "BIOMETRICS"
-    ],
-    "userVerification" : "REQUIRED"
+    ],  
+    "userVerification" : "OPTIONAL"
   })
   lifecycle {
     create_before_destroy = true
@@ -55,7 +55,7 @@ resource "okta_policy_password" "pw_policy" {
   password_exclude_last_name    = true
   
   # NIST 2025: Check against compromised passwords
-  password_dictionary_lookup    = false
+  password_dictionary_lookup    = true
   
   # NIST 2025: No periodic rotation unless compromised
   password_max_age_days        = 0  # No expiration
@@ -89,9 +89,9 @@ resource "okta_policy_rule_password" "standard_users" {
   name      = "Standard Users"
   
   # These are what matter for password policies:
-  password_change = "ALLOW"    # Can users change passwords?
-  password_reset  = "ALLOW"    # Can users reset passwords?  
-  password_unlock = "ALLOW"     # Can users self-unlock?
+  password_change = "DENY"    # Can users change passwords?
+  password_reset  = "DENY"    # Can users reset passwords?  
+  password_unlock = "DENY"     # Can users self-unlock?
   
   # Network zones are OPTIONAL and rarely needed:
   network_connection = "ANYWHERE"  # Usually just leave this as ANYWHERE
@@ -109,10 +109,10 @@ resource "okta_policy_mfa" "passwordless_requirement" {
   priority        = 1
   
  okta_email = {
-    enroll = "ALLOWED"  
+    enroll = "NOT_ALLOWED"  
   }
   okta_verify = {
-    enroll = "ALLOWED"
+    enroll = "REQUIRED"
   }
   okta_password = {
     enroll = "REQUIRED"  
